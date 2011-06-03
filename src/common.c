@@ -24,7 +24,11 @@ ModPlugFile* loadModPlugFile(const char *path)
 
 	self_ = ModPlug_Load(data, size);
 
-	if (!self_) {
+	if (self_) {
+		// The default volume of 127 is lower than the GMES
+		// volume, so set to maximum.
+		ModPlug_SetMasterVolume(self_, 512);
+	} else {
 		MPSP_EPRINTF("failed to load file \"%s\"\n", path);
 	}
 
