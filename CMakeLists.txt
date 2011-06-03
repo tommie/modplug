@@ -7,7 +7,7 @@ add_definitions(-O3 -Wall)
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake)
 include(LibFindMacros)
 
-libfind_package(ModPlug ModPlug REQUIRED)
+libfind_package(modplug ModPlug REQUIRED)
 
 add_library(modplug MODULE src/common.c src/modplug-spotify.c src/parser.c src/playback.c)
 set_target_properties(modplug PROPERTIES
