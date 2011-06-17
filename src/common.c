@@ -13,21 +13,34 @@
 #include "common.h"
 
 
+/**
+ * Read the contents of the file and load it into a ModPlugFile.
+**/
 static ModPlugFile* loadRawFile(const char *path)
 {
-	ssize_t size = getFileSize(path);
 	ModPlugFile *self_ = NULL;
+	struct stat sb;
 
-	if (size < 0) return NULL;
+	if (stat(path, &sb))
+		return NULL;
 
-	void *data = malloc(size);
+	if (sb.st_size < 0) return NULL;
+
+	void *data = malloc(sb.st_size);
 
 	if (!data) return NULL;
 
-	if (readFile(path, data, size) != size)
-		goto exit1;
+	int fd = open(path, O_RDONLY);
 
-	self_ = ModPlug_Load(data, size);
+	if (fd < 0) goto exit1;
+
+	if (read(fd, data, sb.st_size) != sb.st_size)
+		goto exit2;
+
+	self_ = ModPlug_Load(data, sb.st_size);
+
+exit2:
+	close(fd);
 
 exit1:
 	free(data);
@@ -36,8 +49,13 @@ exit1:
 }
 
 #if MPSP_HAVE_LIBZIP
+/**
+ * Read the contents of the first file of the ZIP file and load
+ * it into a ModPlugFile.
+**/
 static ModPlugFile* loadZipFile(const char *path)
 {
+	ModPlugFile *self_ = NULL;
 	int err = 0;
 	struct zip *zf = zip_open(path, 0, &err);
 
@@ -48,7 +66,7 @@ static ModPlugFile* loadZipFile(const char *path)
 	// FIXME: Assumes the first file is the mod-file
 	if (zip_stat_index(zf, 0, 0, &sb)) {
 		MPSP_EPRINTF("failed to stat ZIP member: %s\n", zip_strerror(zf));
-		goto err1;
+		goto exit1;
 	}
 
 	// FIXME: Assumes the first file is the mod-file
@@ -56,40 +74,33 @@ static ModPlugFile* loadZipFile(const char *path)
 
 	if (!file) {
 		MPSP_EPRINTF("failed to open ZIP member: %s\n", zip_strerror(zf));
-		goto err1;
+		goto exit1;
 	}
 
 	void *data = malloc(sb.size);
 
 	if (!data) {
 		MPSP_EPRINTF("failed to allocate memory: %s\n", strerror(errno));
-		goto err2;
+		goto exit2;
 	}
 
 	if (zip_fread(file, data, sb.size) != sb.size) {
 		MPSP_EPRINTF("failed to read ZIP member: %s\n", zip_file_strerror(file));
-		goto err3;
+		goto exit3;
 	}
 
+	self_ = ModPlug_Load(data, sb.size);
+
+exit3:
+	free(data);
+
+exit2:
 	(void) zip_fclose(file);
 
-	ModPlugFile *self_ = ModPlug_Load(data, sb.size);
-
-	free(data);
+exit1:
 	(void) zip_close(zf);
 
 	return self_;
-
-err3:
-	free(data);
-
-err2:
-	(void) zip_fclose(file);
-
-err1:
-	(void) zip_close(zf);
-
-	return NULL;
 }
 #endif
 
@@ -118,28 +129,6 @@ ModPlugFile* loadModPlugFile(const char *path)
 	}
 
 	return self_;
-}
-
-ssize_t getFileSize(const char *path)
-{
-	struct stat sb;
-
-	if (stat(path, &sb)) return -1;
-
-	return sb.st_size;
-}
-
-ssize_t readFile(const char *path, void *buffer, size_t size)
-{
-	int fd = open(path, O_RDONLY);
-
-	if (fd < 0) return -1;
-
-	ssize_t ret = read(fd, buffer, size);
-
-	close(fd);
-
-	return ret;
 }
 
 int getSamplingRate(void)

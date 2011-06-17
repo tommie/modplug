@@ -44,22 +44,6 @@
 extern ModPlugFile* loadModPlugFile(const char *path);
 
 /**
- * Return the size of the named file, in bytes.
- *
- * @return -1 on error, the file size on success.
-**/
-extern ssize_t getFileSize(const char *path);
-
-/**
- * Read the contents of the named file into the given buffer.
- *
- * Data will be truncated if \c size is less than the file size.
- *
- * @return -1 on error, the number of bytes read on success.
-**/
-extern ssize_t readFile(const char *path, void *buffer, size_t size);
-
-/**
  * Return the sampling rate as reported by libmodplug.
  *
  * @return the sampling rate, in samples per second.
