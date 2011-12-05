@@ -13,41 +13,6 @@
 #include "common.h"
 
 
-/**
- * Read the contents of the file and load it into a ModPlugFile.
-**/
-static ModPlugFile* loadRawFile(const char *path)
-{
-	ModPlugFile *self_ = NULL;
-	struct stat sb;
-
-	if (stat(path, &sb))
-		return NULL;
-
-	if (sb.st_size < 0) return NULL;
-
-	void *data = malloc(sb.st_size);
-
-	if (!data) return NULL;
-
-	int fd = open(path, O_RDONLY);
-
-	if (fd < 0) goto exit1;
-
-	if (read(fd, data, sb.st_size) != sb.st_size)
-		goto exit2;
-
-	self_ = ModPlug_Load(data, sb.st_size);
-
-exit2:
-	close(fd);
-
-exit1:
-	free(data);
-
-	return self_;
-}
-
 #if MPSP_HAVE_LIBZIP
 /**
  * Read the contents of the first file of the ZIP file and load
@@ -104,34 +69,40 @@ exit1:
 }
 #endif
 
-ModPlugFile* loadModPlugFile(const char *path)
+ModPlugFile* load_mod_plug(struct sppb_byte_input *input)
 {
 	ModPlugFile *self_;
-#if MPSP_HAVE_ZIP
-	size_t plen = strlen(path);
-#endif
 
-#define MATCH(ext) (!strcasecmp(path + plen - (sizeof(ext) - 1), ext))
-#if MPSP_HAVE_ZIP
-	if (MATCH(".mdz") || MATCH(".s3z") || MATCH(".xmz") || MATCH(".itz"))
-		self_ = loadZipFile(path);
-	else
-#endif
-		self_ = loadRawFile(path);
-#undef MATCH
+	if (!input->get_length || !input->seek)
+		return NULL;
+
+	ssize_t len = input->get_length(input);
+
+	if (len < 0) return NULL;
+
+	void *data = malloc(len);
+
+	if (!data) return NULL;
+
+	if (input->read(input, data, len) != len) {
+		MPSP_EPRINTF("failed to read from input\n");
+		return NULL;
+	}
+
+	self_ = ModPlug_Load(data, len);
 
 	if (self_) {
 		// The default volume of 127 is lower than the GMES
 		// volume, so set to maximum.
 		ModPlug_SetMasterVolume(self_, 512);
 	} else {
-		MPSP_EPRINTF("failed to load file \"%s\"\n", path);
+		MPSP_EPRINTF("failed to load file\n");
 	}
 
 	return self_;
 }
 
-int getSamplingRate(void)
+int get_sampling_rate(void)
 {
 	ModPlug_Settings settings;
 
@@ -140,7 +111,7 @@ int getSamplingRate(void)
 	return settings.mFrequency;
 }
 
-spbool copyString(const char *src, char *dest, size_t *length)
+spbool copy_string(const char *src, char *dest, size_t *length)
 {
 	if (!src) {
 		*length = 0;

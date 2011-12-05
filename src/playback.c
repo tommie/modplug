@@ -7,24 +7,24 @@
 #include "common.h"
 
 
-static void* create(struct SpotifyLFPluginDescription *plugin, const char *path, int song_index)
+static void* create(struct sppb_plugin_description *plugin, struct sppb_byte_input *input, int song_index)
 {
 	MPSP_DPRINTF("playback: create(%s, %d)\n", path, song_index);
 
 	// We only support a single song.
 	if (song_index) return NULL;
 
-	return loadModPlugFile(path);
+	return load_mod_plug(input);
 }
 
-static void destroy(struct SpotifyLFPluginDescription *plugin, void *context)
+static void destroy(struct sppb_plugin_description *plugin, void *context)
 {
 	MPSP_DPRINTF("playback: destroy(%p)\n", context);
 
 	ModPlug_Unload(self);
 }
 
-static spbool decode(struct SpotifyLFPluginDescription *plugin, void *context, spbyte *dest, size_t *destlen, spbool *final)
+static spbool decode(struct sppb_plugin_description *plugin, void *context, spbyte *dest, size_t *destlen, spbool *final)
 {
 	int n = ModPlug_Read(self, dest, *destlen);
 
@@ -36,16 +36,16 @@ static spbool decode(struct SpotifyLFPluginDescription *plugin, void *context, s
 	return sptrue;
 }
 
-static spbool seek(struct SpotifyLFPluginDescription *plugin, void *context, unsigned int sample)
+static spbool seek(struct sppb_plugin_description *plugin, void *context, unsigned int sample)
 {
 	MPSP_DPRINTF("playback: seek(%u)\n", sample);
 
-	ModPlug_Seek(self, (sample / getSamplingRate()) * 1000);
+	ModPlug_Seek(self, (sample / get_sampling_rate()) * 1000);
 
 	return sptrue;
 }
 
-static size_t getMinimumOutputBufferSize(struct SpotifyLFPluginDescription *plugin, void *context)
+static size_t get_minimum_output_buffer_size(struct sppb_plugin_description *plugin, void *context)
 {
 	ModPlug_Settings settings;
 
@@ -55,12 +55,12 @@ static size_t getMinimumOutputBufferSize(struct SpotifyLFPluginDescription *plug
 	return settings.mBits / 8 * settings.mChannels * settings.mFrequency / 10;
 }
 
-static unsigned int getLengthInSamples(struct SpotifyLFPluginDescription *plugin, void *context)
+static unsigned int get_length_in_samples(struct sppb_plugin_description *plugin, void *context)
 {
-	return (ModPlug_GetLength(self) + 500) / 1000 * getSamplingRate();
+	return (ModPlug_GetLength(self) + 500) / 1000 * get_sampling_rate();
 }
 
-static void getAudioFormat(struct SpotifyLFPluginDescription *plugin, void *context, unsigned int *samplerate, enum SpotifyLFSoundFormat *format, enum SPChannelFormat *channels)
+static void get_audio_format(struct sppb_plugin_description *plugin, void *context, unsigned int *samplerate, enum sppb_sound_format *format, enum sppb_channel_format *channels)
 {
 	ModPlug_Settings settings;
 
@@ -69,15 +69,15 @@ static void getAudioFormat(struct SpotifyLFPluginDescription *plugin, void *cont
 	*samplerate = settings.mFrequency;
 
 	switch (settings.mBits) {
-	case  8: *format = kSoundFormat8BitsPerSample; break;
-	case 16: *format = kSoundFormat16BitsPerSample; break;
+	case  8: *format = SPPB_SOUND_FORMAT_8BITS_PER_SAMPLE; break;
+	case 16: *format = SPPB_SOUND_FORMAT_16BITS_PER_SAMPLE; break;
 	default: *format = INT_MAX; break; // TODO(tommie): Report error.
 	}
 
 	switch (settings.mChannels) {
-	case 1: *channels = kSPMono; break;
-	case 2: *channels = kSPStereo; break;
-	default: *channels = INT_MAX; break; // TODO(tommie): Report error.
+	case 1: *channels = SPPB_CHANNEL_FORMAT_MONO; break;
+	case 2: *channels = SPPB_CHANNEL_FORMAT_STEREO; break;
+	default: *channels = SPPB_CHANNEL_FORMAT_INVALID; break;
 	}
 }
 
@@ -85,12 +85,12 @@ static void getAudioFormat(struct SpotifyLFPluginDescription *plugin, void *cont
 /**
  * The playback plugin description, as required by the plugin API.
 **/
-const struct SpotifyLFPlaybackPlugin MODPLUG_PLAYBACK_PLUGIN = {
+const struct sppb_playback_plugin MODPLUG_PLAYBACK_PLUGIN = {
 	.create = create,
 	.destroy = destroy,
 	.decode = decode,
 	.seek = seek,
-	.getMinimumOutputBufferSize = getMinimumOutputBufferSize,
-	.getLengthInSamples = getLengthInSamples,
-	.getAudioFormat = getAudioFormat,
+	.get_minimum_output_buffer_size = get_minimum_output_buffer_size,
+	.get_length_in_samples = get_length_in_samples,
+	.get_audio_format = get_audio_format,
 };

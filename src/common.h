@@ -41,14 +41,14 @@
  * @param path a valid file name.
  * @return NULL on error, a valid pointer on success.
 **/
-extern ModPlugFile* loadModPlugFile(const char *path);
+extern ModPlugFile* load_mod_plug(struct sppb_byte_input *input);
 
 /**
  * Return the sampling rate as reported by libmodplug.
  *
  * @return the sampling rate, in samples per second.
 **/
-extern int getSamplingRate(void);
+extern int get_sampling_rate(void);
 
 /**
  * Copy the string from src to dest, updating length aftwards.
@@ -63,6 +63,6 @@ extern int getSamplingRate(void);
  * @param length a pointer to the initial length of the buffer.
  * @return zero if \c src was NULL, non-zero otherwise.
 **/
-spbool copyString(const char *src, char *dest, size_t *length);
+spbool copy_string(const char *src, char *dest, size_t *length);
 
 #endif /* __MODPLUG_SPOTIFY_COMMON_H__ */

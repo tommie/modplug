@@ -7,78 +7,78 @@
 #include "common.h"
 
 
-static void* create(struct SpotifyLFPluginDescription *plugin, const char *path, int song_index)
+static void* create(struct sppb_plugin_description *plugin, struct sppb_byte_input *input, int song_index)
 {
-	MPSP_DPRINTF("parser: create(%s, %d)\n", path, song_index);
+	MPSP_DPRINTF("parser: create(%p, %d)\n", input, song_index);
 
 	// We only support a single song.
 	if (song_index) return NULL;
 
-	return loadModPlugFile(path);
+	return load_mod_plug(input);
 }
 
-static void destroy(struct SpotifyLFPluginDescription *plugin, void *context)
+static void destroy(struct sppb_plugin_description *plugin, void *context)
 {
 	MPSP_DPRINTF("parser: destroy(%p)\n", context);
 
 	ModPlug_Unload(self);
 }
 
-static unsigned int getSongCount(struct SpotifyLFPluginDescription *plugin, void *context)
+static unsigned int get_song_count(struct sppb_plugin_description *plugin, void *context)
 {
 	return 1;
 }
 
-static enum SPChannelFormat getChannelFormat(struct SpotifyLFPluginDescription *plugin, void *context)
+static enum sppb_channel_format get_channel_format(struct sppb_plugin_description *plugin, void *context)
 {
 	ModPlug_Settings settings;
 
 	ModPlug_GetSettings(&settings);
 
-	MPSP_DPRINTF("parser: getChannelFormat(): %d\n", settings.mChannels);
+	MPSP_DPRINTF("parser: get_channel_format(): %d\n", settings.mChannels);
 
 	switch (settings.mChannels) {
-	case 1: return kSPMono;
-	case 2: return kSPStereo;
-	default: return INT_MAX; // TODO(tommie): Report error.
+	case 1: return SPPB_CHANNEL_FORMAT_MONO;
+	case 2: return SPPB_CHANNEL_FORMAT_STEREO;
+	default: return SPPB_CHANNEL_FORMAT_INVALID;
 	}
 }
 
-static unsigned int getSampleRate(struct SpotifyLFPluginDescription *plugin, void *context)
+static unsigned int get_sample_rate(struct sppb_plugin_description *plugin, void *context)
 {
 	ModPlug_Settings settings;
 
 	ModPlug_GetSettings(&settings);
 
-	MPSP_DPRINTF("parser: getSampleRate(): %d\n", settings.mFrequency);
+	MPSP_DPRINTF("parser: get_sample_rate(): %d\n", settings.mFrequency);
 
 	return settings.mFrequency;
 }
 
-static unsigned int getLengthInSamples(struct SpotifyLFPluginDescription *plugin, void *context)
+static unsigned int get_length_in_samples(struct sppb_plugin_description *plugin, void *context)
 {
-	MPSP_DPRINTF("parser: getLengthInSamples(): %u\n", (ModPlug_GetLength(self) + 500) / 1000 * getSamplingRate());
+	MPSP_DPRINTF("parser: get_length_in_samples(): %u\n", (ModPlug_GetLength(self) + 500) / 1000 * getSamplingRate());
 
-	return (ModPlug_GetLength(self) + 500) / 1000 * getSamplingRate();
+	return (ModPlug_GetLength(self) + 500) / 1000 * get_sampling_rate();
 }
 
-static spbool hasField(struct SpotifyLFPluginDescription *plugin, void *context, enum SPFieldType type)
+static spbool has_field(struct sppb_plugin_description *plugin, void *context, enum sppb_field_type type)
 {
-	MPSP_DPRINTF("parser: hasField(%d)\n", type);
+	MPSP_DPRINTF("parser: has_field(%d)\n", type);
 
 	switch (type) {
-	case kSPFieldTypeTitle: return sptrue;
+	case SPPB_FIELD_TYPE_TITLE: return sptrue;
 	default: return spfalse;
 	}
 }
 
-static spbool readField(struct SpotifyLFPluginDescription *plugin, void *context, enum SPFieldType type, char *dest, size_t *length)
+static spbool read_field(struct sppb_plugin_description *plugin, void *context, enum sppb_field_type type, char *dest, size_t *length)
 {
-	MPSP_DPRINTF("parser: readField(%d, %p, %zu)\n", type, dest, *length);
+	MPSP_DPRINTF("parser: read_field(%d, %p, %zu)\n", type, dest, *length);
 
 	switch (type) {
-	case kSPFieldTypeTitle:
-		return copyString(ModPlug_GetName(self), dest, length);
+	case SPPB_FIELD_TYPE_TITLE:
+		return copy_string(ModPlug_GetName(self), dest, length);
 
 	default:
 		return spfalse;
@@ -89,14 +89,14 @@ static spbool readField(struct SpotifyLFPluginDescription *plugin, void *context
 /**
  * The playback plugin description, as required by the plugin API.
 **/
-const struct SpotifyLFParserPlugin MODPLUG_PARSER_PLUGIN = {
+const struct sppb_parser_plugin MODPLUG_PARSER_PLUGIN = {
 	.create = create,
 	.destroy = destroy,
-	.getSongCount = getSongCount,
-	.getChannelFormat = getChannelFormat,
-	.getSampleRate = getSampleRate,
-	.getLengthInSamples = getLengthInSamples,
-	.hasField = hasField,
-	.readField = readField,
-	.writeField = NULL,
+	.get_song_count = get_song_count,
+	.get_channel_format = get_channel_format,
+	.get_sample_rate = get_sample_rate,
+	.get_length_in_samples = get_length_in_samples,
+	.has_field = has_field,
+	.read_field = read_field,
+	.write_field = NULL,
 };

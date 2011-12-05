@@ -7,8 +7,8 @@
 
 
 // --- External data ---
-extern const struct SpotifyLFParserPlugin MODPLUG_PARSER_PLUGIN;
-extern const struct SpotifyLFPlaybackPlugin MODPLUG_PLAYBACK_PLUGIN;
+extern const struct sppb_parser_plugin MODPLUG_PARSER_PLUGIN;
+extern const struct sppb_playback_plugin MODPLUG_PLAYBACK_PLUGIN;
 
 
 /*
@@ -101,15 +101,15 @@ static void setupModPlug(void)
  *
  * This function is called by Spotify while initializing the plugin.
 **/
-struct SpotifyLFPluginDescription* SpotifyLocalFilePlaybackPluginCreate()
+struct sppb_plugin_description* CreateSpotifyPlaybackPlugin()
 {
-	struct SpotifyLFPluginDescription *ret = calloc(1, sizeof(*ret));
+	struct sppb_plugin_description *ret = calloc(1, sizeof(*ret));
 
 	MPSP_DPRINTF("SpotifyLocalFilePlaybackPluginCreate\n");
 
 	setupModPlug();
 
-	ret->api_version = SP_LF_PLUGIN_API_VERSION;
+	ret->api_version = SPPB_API_VERSION;
 	ret->plugin_name = "ModPlug";
 	ret->plugin_version = 1;
 	ret->file_extensions = KNOWN_FILE_EXTENSIONS;
