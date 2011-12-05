@@ -86,6 +86,7 @@ ModPlugFile* load_mod_plug(struct sppb_byte_input *input)
 
 	if (input->read(input, data, len) != len) {
 		MPSP_EPRINTF("failed to read from input\n");
+		free(data);
 		return NULL;
 	}
 
@@ -98,6 +99,8 @@ ModPlugFile* load_mod_plug(struct sppb_byte_input *input)
 	} else {
 		MPSP_EPRINTF("failed to load file\n");
 	}
+
+	free(data);
 
 	return self_;
 }
